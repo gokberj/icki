@@ -28,7 +28,6 @@ class AlcoholLicenseGame {
             
             // Eskişehir - Historic/University areas
             { name: 'Odunpazarı', city: 'Eskişehir', center: [39.7667, 30.5256], zoom: 17 },
-            { name: 'Kurşunlu', city: 'Eskişehir', center: [39.7710, 30.5190], zoom: 17 },
             
             // Diyarbakır - Historic areas
             { name: 'Sur', city: 'Diyarbakır', center: [37.9158, 40.2369], zoom: 17 },
@@ -491,7 +490,7 @@ class AlcoholLicenseGame {
                 // Show temporary warning
                 const warning = L.popup()
                     .setLatLng(e.latlng)
-                    .setContent('⚠️ Buraya yakın bir işletme zaten açtın.')
+                    .setContent('⚠️ Buraya yakın zaten bir işletme açtın.')
                     .openOn(this.map);
                 setTimeout(() => this.map.closePopup(warning), 2000);
                 return;
@@ -845,6 +844,4 @@ class AlcoholLicenseGame {
 
 // Create global game instance
 let game;
-document.addEventListener('DOMContentLoaded', () => {
-    game = new AlcoholLicenseGame();
-});
+// Game initialization is now handled by the startGame() function in HTML
