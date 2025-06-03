@@ -491,7 +491,7 @@ class AlcoholLicenseGame {
                 // Show temporary warning
                 const warning = L.popup()
                     .setLatLng(e.latlng)
-                    .setContent('⚠️ Buraya yakın zaten bir işletme açtın.')
+                    .setContent('⚠️ Buraya yakın bir işletme zaten açtın.')
                     .openOn(this.map);
                 setTimeout(() => this.map.closePopup(warning), 2000);
                 return;
