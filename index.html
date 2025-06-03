@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ruhsat Mayın Tarlası</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        #map {
+            width: 100vw;
+            height: 100vh;
+        }
+        /* Custom cursor styles */
+        #map { cursor: none; }
+        #map.placing-tekel { cursor: none; }
+        #map.placing-restaurant { cursor: none; }
+        #map.placing-meyhane { cursor: none; }
+        #map.placing-bar { cursor: none; }
+        #map.placing-club { cursor: none; }
+        
+        .custom-cursor {
+            position: fixed;
+            width: 32px;
+            height: 32px;
+            pointer-events: none;
+            z-index: 9998;
+            animation: cursorBounce 1.5s infinite;
+            margin-left: -16px;
+            margin-top: -16px;
+        }
+        
+        @keyframes cursorBounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-8px); }
+            60% { transform: translateY(-4px); }
+        }
+        
+        #challenge {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 20px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            z-index: 1000;
+            animation: slideDown 0.5s ease-out;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            min-width: 280px;
+            display: block !important;
+        }
+        #challenge .location {
+            font-size: 20px;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            display: block;
+        }
+        #challenge .progress-line {
+            display: flex !important;
+            align-items: center;
+            gap: 15px;
+        }
+        #challenge .progress {
+            font-size: 16px;
+            color: #7f8c8d;
+            font-weight: normal;
+            white-space: nowrap;
+            padding-right: 15px;
+            border-right: 2px solid #e0e0e0;
+            display: inline-block;
+        }
+        #challenge .task {
+            display: flex !important;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+        }
+        #challenge .icon {
+            width: 24px;
+            height: 24px;
+        }
+        #challenge .text {
+            font-size: 16px;
+        }
+        @keyframes slideDown {
+            from {
+                transform: translateY(-100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        #game-over-modal {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 20px 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 1001;
+            display: none;
+            text-align: left;
+            min-width: 400px;
+            max-width: 800px;
+            animation: slideUp 0.5s ease-out;
+        }
+        @keyframes slideUp {
+            from {
+                transform: translateX(-50%) translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+        #game-over-modal h3 {
+            margin: 0 0 10px 0;
+            font-size: 20px;
+            display: inline-block;
+        }
+        #game-over-modal p {
+            margin: 10px 0;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        .danger-zone {
+            fill: #ff0000;
+            fill-opacity: 0.2;
+            stroke: #ff0000;
+            stroke-width: 2;
+            stroke-opacity: 0.5;
+            animation: pulseRed 2s infinite;
+        }
+        .danger-zone-reveal {
+            animation: revealDanger 1s ease-out, pulseRed 2s infinite 1s;
+        }
+        @keyframes revealDanger {
+            from {
+                fill-opacity: 0;
+                stroke-opacity: 0;
+                stroke-width: 20;
+                transform: scale(0.5);
+            }
+            to {
+                fill-opacity: 0.2;
+                stroke-opacity: 0.5;
+                stroke-width: 2;
+                transform: scale(1);
+            }
+        }
+        @keyframes pulseRed {
+            0%, 100% { fill-opacity: 0.2; stroke-opacity: 0.5; }
+            50% { fill-opacity: 0.3; stroke-opacity: 0.7; }
+        }
+        .hint-zone {
+            fill: #ff9800;
+            fill-opacity: 0.15;
+            stroke: #ff9800;
+            stroke-width: 1;
+            stroke-opacity: 0.4;
+            stroke-dasharray: 5, 5;
+            animation: dashRotate 20s linear infinite;
+        }
+        @keyframes dashRotate {
+            to { stroke-dashoffset: 100; }
+        }
+        .restart-button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 20px;
+            transition: all 0.3s ease;
+        }
+        .restart-button:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+        /* Hide Leaflet controls */
+        .leaflet-control-attribution,
+        .leaflet-control-zoom {
+            display: none;
+        }
+        .establishment-marker img {
+            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5));
+        }
+        .establishment-marker-animated {
+            animation: dropIn 0.5s ease-out;
+        }
+        @keyframes dropIn {
+            from {
+                transform: scale(0) rotate(180deg);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+        }
+        /* Success ripple animation */
+        .success-ripple {
+            animation: ripple 1.5s ease-out forwards;
+        }
+        @keyframes ripple {
+            to {
+                transform: scale(1.5);
+                opacity: 0;
+            }
+        }
+        /* Close call popup */
+        .close-call-popup {
+            position: fixed;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #ff6b6b, #ff8787);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 50px;
+            font-size: 28px;
+            font-weight: bold;
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.5);
+            z-index: 2000;
+            animation: closeCallBounce 2s ease-out forwards;
+        }
+        .close-call-popup span {
+            display: inline-block;
+            animation: shake 0.5s ease-in-out;
+        }
+        @keyframes closeCallBounce {
+            0% {
+                transform: translateX(-50%) translateY(-50px) scale(0);
+                opacity: 0;
+            }
+            20% {
+                transform: translateX(-50%) translateY(0) scale(1.2);
+                opacity: 1;
+            }
+            30% {
+                transform: translateX(-50%) translateY(0) scale(0.9);
+            }
+            40% {
+                transform: translateX(-50%) translateY(0) scale(1);
+            }
+            90% {
+                transform: translateX(-50%) translateY(0) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(-50%) translateY(-30px) scale(0.8);
+                opacity: 0;
+            }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        /* No filter on map - same look for start and end */
+        .leaflet-tile-pane {
+            transition: filter 1s ease;
+        }
+        /* Keep labels normal */
+        .leaflet-pane.leaflet-shadowPane {
+            filter: none !important;
+        }
+        /* Green areas styling */
+        .leaflet-interactive[fill="#81C784"] {
+            cursor: not-allowed !important;
+        }
+        /* OSM-style icons */
+        .osm-icon {
+            width: 20px;
+            height: 20px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+        /* Icon images */
+        .osm-icon-school { 
+            background-image: url('school.png'); 
+        }
+        .osm-icon-mosque { 
+            background-image: url('mosque.png'); 
+        }
+        .osm-icon-church { 
+            background-image: url('church.png'); 
+        }
+        .osm-icon-synagogue { 
+            background-image: url('synagogue.png'); 
+        }
+        .osm-icon-dormitory { 
+            background-image: url('dormitory.png'); 
+        }
+        /* Loading animation */
+        .leaflet-popup-content {
+            animation: fadeIn 0.3s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        /* Confetti animation */
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            top: -10px;
+            z-index: 9999;
+            animation: confettiFall linear forwards;
+        }
+        @keyframes confettiFall {
+            to {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+        /* Loading spinner */
+        .loading-spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #333;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div id="challenge">
+        <div class="location">Yükleniyor...</div>
+        <div class="progress-line">
+            <span class="progress">1/5</span>
+            <div class="task">
+                <img class="icon" src="" style="display:none;">
+                <span class="text"></span>
+            </div>
+        </div>
+    </div>
+    <div id="game-over-modal"></div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
