@@ -130,10 +130,15 @@ class AlcoholLicenseGame {
         this.map = L.map('map', {
             center: location.center,
             zoom: location.zoom,
-            minZoom: location.zoom,
+            minZoom: location.zoom - 1,
             maxZoom: 18,
             zoomControl: false,
-            attributionControl: false
+            attributionControl: false,
+            tap: true,
+            touchZoom: true,
+            dragging: true,
+            doubleClickZoom: false,
+            scrollWheelZoom: true
         });
         
         // Use CartoDB Positron tiles which have minimal labels (only street names)
@@ -160,13 +165,15 @@ class AlcoholLicenseGame {
         // Add click handler
         this.map.on('click', (e) => this.onMapClick(e));
         
-        // Create custom cursor
-        this.createCustomCursor();
-        
-        // Track mouse movement for custom cursor
-        this.map.on('mousemove', (e) => this.updateCustomCursor(e));
-        this.map.on('mouseenter', () => this.showCustomCursor());
-        this.map.on('mouseleave', () => this.hideCustomCursor());
+        // Create custom cursor only for desktop
+        if (window.innerWidth > 768) {
+            this.createCustomCursor();
+            
+            // Track mouse movement for custom cursor
+            this.map.on('mousemove', (e) => this.updateCustomCursor(e));
+            this.map.on('mouseenter', () => this.showCustomCursor());
+            this.map.on('mouseleave', () => this.hideCustomCursor());
+        }
     }
     
     async loadRealRestrictedZones() {
@@ -474,10 +481,13 @@ class AlcoholLicenseGame {
         }
         
         if (inGreenArea) {
-            // Show warning for green area
+            // Show warning for green area with mobile-friendly text
+            const warningText = window.innerWidth > 768 ? 
+                '🌳 Park ve yeşil alanlara yerleşemezsin!' : 
+                '🌳 Yasak alan!';
             const warning = L.popup()
                 .setLatLng(e.latlng)
-                .setContent('🌳 Park ve yeşil alanlara yerleşemezsin!')
+                .setContent(warningText)
                 .openOn(this.map);
             setTimeout(() => this.map.closePopup(warning), 2000);
             return;
@@ -487,10 +497,13 @@ class AlcoholLicenseGame {
         for (let placed of this.placedEstablishments) {
             const distance = this.calculateDistance(clickedLat, clickedLng, placed.lat, placed.lng);
             if (distance < 150) {
-                // Show temporary warning
+                // Show temporary warning with mobile-friendly popup
+                const warningText = window.innerWidth > 768 ? 
+                    '⚠️ Buraya yakın bir işletme zaten açtın.' : 
+                    '⚠️ Buraya yakın bir işletme zaten açtın!';
                 const warning = L.popup()
                     .setLatLng(e.latlng)
-                    .setContent('⚠️ Buraya yakın zaten bir işletme açtın.')
+                    .setContent(warningText)
                     .openOn(this.map);
                 setTimeout(() => this.map.closePopup(warning), 2000);
                 return;
@@ -826,7 +839,7 @@ class AlcoholLicenseGame {
                       <button class="restart-button" onclick="game.initGame()">Yeni Bölge</button>
                       <p>${location.city}, ${location.name}'de başarılı oldunuz!</p>`;
         } else {
-            content = `<h3 style="color: #F44336;">💥 Başarısız!</h3>
+            content = `<h3 style="color: #F44336;">💥 Olmadı!</h3>
                       <button class="restart-button" onclick="game.initGame()">Yeni Bölge</button>
                       <p>${this.getFailureMessage()}</p>`;
         }
