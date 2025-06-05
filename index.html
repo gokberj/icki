@@ -1,13 +1,20 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>İçki Mayın Tarlası</title>
+    <title>Ruhsat Mayın Tarlası</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
     <style>
         body {
             margin: 0;
             font-family: Arial, sans-serif;
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
         }
         #map {
             width: 100vw;
@@ -343,6 +350,101 @@
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            #challenge {
+                top: 10px;
+                left: 10px;
+                right: 10px;
+                min-width: unset;
+                padding: 12px 15px;
+                font-size: 16px;
+            }
+            #challenge .location {
+                font-size: 18px;
+                margin-bottom: 6px;
+            }
+            #challenge .progress {
+                font-size: 14px;
+                padding-right: 12px;
+            }
+            #challenge .icon {
+                width: 20px;
+                height: 20px;
+            }
+            #challenge .text {
+                font-size: 14px;
+            }
+            #game-over-modal {
+                bottom: 20px;
+                left: 20px;
+                right: 20px;
+                transform: none;
+                min-width: unset;
+                max-width: unset;
+                padding: 15px 20px;
+            }
+            #game-over-modal h3 {
+                font-size: 18px;
+            }
+            #game-over-modal p {
+                font-size: 14px;
+            }
+            .restart-button {
+                padding: 8px 16px;
+                font-size: 14px;
+                margin-left: 10px;
+                margin-top: 10px;
+                display: block;
+                width: fit-content;
+            }
+            #law-popup {
+                left: 20px;
+                right: 20px;
+                transform: translateY(-50%);
+                padding: 20px;
+                max-width: unset;
+            }
+            #law-popup p {
+                font-size: 16px;
+            }
+            #law-popup button {
+                padding: 10px 25px;
+                font-size: 16px;
+            }
+            .close-call-popup {
+                font-size: 24px;
+                padding: 15px 30px;
+            }
+            /* Hide custom cursor on mobile */
+            .custom-cursor {
+                display: none !important;
+            }
+            /* Show default cursor on mobile */
+            #map, #map.placing-tekel, #map.placing-restaurant, 
+            #map.placing-meyhane, #map.placing-bar, #map.placing-club {
+                cursor: default !important;
+            }
+        }
+        /* Even smaller screens */
+        @media (max-width: 400px) {
+            #challenge {
+                font-size: 14px;
+                padding: 10px 12px;
+            }
+            #challenge .location {
+                font-size: 16px;
+            }
+            #challenge .progress {
+                font-size: 13px;
+            }
+            #challenge .text {
+                font-size: 13px;
+            }
+            #law-popup p {
+                font-size: 14px;
+            }
         }
         /* Law popup */
         #law-popup {
